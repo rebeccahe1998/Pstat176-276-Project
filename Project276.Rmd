@@ -1,0 +1,73 @@
+---
+title: "276 Project"
+author: "Ron Kinel, Rebecca He, Lingyu Zhou, Wenjing Li, Samran Khan"
+date: "5/22/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+
+# Problem 2
+```{r}
+#n: number of paths
+#sigma: volatilty/variance of stock, not sd
+#S0: current stock price
+#t: terminal time in yearly unit
+#np: number of periods
+#h: length of single period = T/np
+#r: interest rate
+#delta: continuous dividend yield of the stock
+
+StockPath <- function(n, sigma, S0, t, np, r, delta){
+  S <- array(0, dim=c(n,np+1))
+  S[,1] <- S0
+  Z <<- matrix( rnorm(n*(np+1)), n, (np+1))
+  h <- t/np
+  
+  for(i in 1:n){
+    for (j in 1:np) {
+      S[i,j+1] <- S[i,j]*exp((r-delta-sigma/2)*h + sqrt(h*sigma)*Z[i,j])
+    }
+  }
+  
+  mypath <<- S
+  return (mypath)
+}
+
+StockPath(25,.04,50,2,4,.04,0)
+```
+
+# Problem 3
+```{r}
+EurOptPrice <- function(n, sigma, S0, t, np, r, delta, k){
+  StockPath(n, sigma, S0, t, np, r, delta)
+  
+  disc_payoff <<- c(1:n)
+  
+  for (i in 1:n){
+    disc_payoff[i] <<- exp(-r*t)*pmax(k-mypath[i,(np+1)],0)
+  }
+  
+  option_price <- mean(disc_payoff)
+  option_var <- sd(disc_payoff)^2
+  
+  d1 = (log(S0/k)+(r+(sigma)/2)*t)/(sqrt(t*sigma))
+  d2 = d1-(sqrt(sigma*t))
+  
+  Eu_put_bs_price <- (k*exp(-r*t)*pnorm(-d2))-(S0*exp(-delta*t)*pnorm(-d1))
+  
+  x <- cat("The MC price of this option is: ", option_price, ".\nThe variance is: ", option_var, ".\nThe true Black-Scholes price of this option is: ", Eu_put_bs_price, ".\nThe dsicounted payoff vector is: ", disc_payoff)
+  
+  return(x)
+}
+
+EurOptPrice(25,.04,50,2,4,.04,0, 50)
+```
+
+
