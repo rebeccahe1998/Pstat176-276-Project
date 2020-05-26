@@ -66,7 +66,7 @@ StockPath(20,.04,50,10,5,.04,0)
 # Problem 3
 ```{r}
 EurOptPrice <- function(n, sigma=histoVol, S0, t, np=t, r, delta=0, k=S0){
-  StockPath(n, sigma, S0, t, np, r, delta) #updates "mypath" from problem 2 with new values.
+  mypath <- StockPath(n, sigma, S0, t, np, r, delta) #updates "mypath" from problem 2 with new values.
   disc_payoff <<- array(0, dim=c(n,1)) #discounted payoff vector
   
   for (i in 1:n){
