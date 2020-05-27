@@ -5,9 +5,10 @@ and an analysis file. Our goal is to use Monte Carlo method and estimate the pri
 
 
 Stock prices are modeled as a geometric Brownian motion:
-St = S0 * e ^(Rt) where Rt =  mu*t+sigma*Bt
+St = S0 * e ^ ((mu-0.5 * sigma^2)t + sigma *Wt)
+
 Interpretation:
-Rt is log return on [0,t]
+
 mu is expected annual return
 sigma is anual volatility
-Bt is standard Brownian motion
+Wt is THE Brownian motion PATH that includes effects of all random shocks since time 0 
