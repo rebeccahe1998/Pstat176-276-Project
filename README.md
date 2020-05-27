@@ -10,5 +10,7 @@ St = S0 * e ^ ((mu-0.5 * sigma^2)t + sigma *Wt)
 Interpretation:
 
 mu is expected annual return
+
 sigma is anual volatility
+
 Wt is THE Brownian motion PATH that includes effects of all random shocks since time 0 
