@@ -5,5 +5,5 @@ and an analysis file. Our goal is to use Monte Carlo method and estimate the pri
 
 
 Stock prices are modeled as a geometric Brownian motion:
-St = S0 * e ^(Rt)
- h<sub>&theta
+S<sub>t = S<sub>0 * e ^(R<sub>t)
+ h<sub>theta
