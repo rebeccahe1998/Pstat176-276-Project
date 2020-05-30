@@ -18,23 +18,12 @@ StockVol <- function(histoPrice){
   
   for (i in 1:n-1) {
     ret[i,1] <<- (histoPrice[i+1] / histoPrice[i]) - 1
-    ret[i,2] <<- ret[i,1]^2
   }
   
-  sumRi2 <- sum(ret[,2])
-  Ribar <- mean(ret[,1])
-  histoVol <<-  (sumRi2 - (n-1)*(Ribar^2)) / (n-2)
-  #also equals var(ret[,1])
-  
-  return(cat("The historical daily volatility of this stock is: ", histoVol, 
-             "\nThe annualized historical volatility is: ", histoVol *sqrt(252)))
+  return(cat("The historical daily volatility of this stock is: ", var(ret[,1])))
 }
 
-  #testing with an nx1 array
-    test <- array(dim=c(5,1))
-    for (i in 1:5){
-      test[i,1] <- 3*i
-    }
+    test <- c(4,4,5,7,8,7,6)
   
 StockVol(test)
 ```
