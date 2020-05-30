@@ -31,7 +31,7 @@ StockVol(test)
 # Problem 2
 ```{r}
 #n: number of paths
-#sigma: volatilty/variance of stock, not sd
+#sigma: volatilty of stock(sd)
 #S0: current stock price
 #t: terminal time in yearly unit
 #np: number of periods
@@ -47,7 +47,7 @@ StockPath <- function(n, sigma, S0, t, np=t, r, delta=0){
   
   for(i in 1:n){
     for (j in 1:np) {
-      S[i,j+1] <- S[i,j]*exp((r-delta-sigma/2)*h + sqrt(h*sigma)*Z[i,j])
+      S[i,j+1] <- S[i,j]*exp((r-delta-(sigma^2)/2)*h + sqrt(h*(sigma^2))*Z[i,j])
     }
   }
   
@@ -55,7 +55,7 @@ StockPath <- function(n, sigma, S0, t, np=t, r, delta=0){
   return (mypath)
 }
 
-StockPath(20,.04,50,10,5,.04,0)
+StockPath(20,.2,50,10,5,.04,0)
 ```
 
 
@@ -74,8 +74,8 @@ EurOptPrice <- function(n, sigma=histoVol, S0, t, np=t, r, delta=0, k=S0){
   option_var <- sd(disc_payoff)^2
   
   #using bs pricing to compare mc estimate
-  d1 = (log(S0/k)+(r+(sigma)/2)*t)/(sqrt(t*sigma))
-  d2 = d1-(sqrt(sigma*t))
+  d1 <- (log(S0/k) + (r + sigma^2/2)*t) / (sigma*sqrt(t))
+  d2 <- d1 - sigma*sqrt(t)
   Eu_put_bs_price <- (k*exp(-r*t)*pnorm(-d2))-(S0*exp(-delta*t)*pnorm(-d1))
   
   x <- cat("The Monte Carlo price of this option is: ", option_price, ".\nThe variance is: ", option_var, ".\nThe true Black-Scholes price of this option is: ", Eu_put_bs_price, ".\nThe discounted payoff vector is:\n")
@@ -83,5 +83,5 @@ EurOptPrice <- function(n, sigma=histoVol, S0, t, np=t, r, delta=0, k=S0){
   return(c(x, disc_payoff))
 }
 
-EurOptPrice(20,.04,50,10,5,.04,0,50)
+EurOptPrice(20,.2,50,10,5,.04,0,50)
 ```
