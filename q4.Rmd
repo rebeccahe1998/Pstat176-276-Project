@@ -1,0 +1,57 @@
+---
+title: "Q4"
+author: "Lingyu Zhou"
+date: "6/3/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Problem 4
+```{r}
+AmeOptPrice <- function(C, S0, t, r, model, k=S0){
+  Paths <- nrow(C)
+  Steps <- ncol(C)-1
+  dt <- t/Steps #time interval for each step
+  df <- exp(-r*dt*(1:Steps)) #all discounting factors
+  num_model <-length(model) #number of functions used in model
+  C <- C[,-1] #first column is simply S0, so remove it 
+  Value_t <- pmax(C[,Steps]-k, 0) #value at time t
+  exercise_time <- Steps*rep(1,Paths)
+  for (i in seq(from=Steps-1, to=1, by=-1)){ #make comparisons starting from the last two column
+    Payoff_Value <- pmax(C[,i]-k, 0) 
+    gain <- which(Payoff_Value > 0) #find rows with positive gains
+    paths_gain <- C[gain,i] #generate a matrix with current row and column
+    regress_Matrix <- matrix(nrow=length(paths_gain), ncol= num_model)
+    for (j in 1:num_model) {
+      regress_Matrix[,j] <- sapply(paths_gain,model[[j]]) #apply regression on current matrix
+    }
+    discounted_payoff <- Value_t[gain]*df[exercise_time[gain]-i]
+    regress_model <- lm.fit(regress_Matrix,discounted_payoff)
+    Vector <- as.numeric(regress_model$coefficients)   
+    Holding_Value <- regress_Matrix%*%Vector
+    perform_time <- which(Payoff_Value[gain]>Holding_Value)
+    exercise_Paths <- gain[perform_time]
+    Value_t[exercise_Paths] <- Payoff_Value[exercise_Paths]
+    exercise_time[exercise_Paths] <- i #in i-th col, we exercise
+  }
+  price <- pmax(pmax(k-S0, 0),mean(Value_t*df[exercise_time]))
+  return (price)
+}
+
+degree0 <- function (x) rep(1,length(x)) 
+degree1 <- function (x) x
+degree2 <- function (x) x^2
+model <- list(degree0,degree1,degree2) 
+
+data <- read.csv("/Users/lingyuzhou/Desktop/IBM-MSFT-HAS.csv")
+data[,1] <- 100
+data <- as.matrix(data)
+r <- 0.06
+T <- 3
+S0 <- 100
+K <- 85
+AmeOptPrice(data,S0,T,r,model,K)
+```
