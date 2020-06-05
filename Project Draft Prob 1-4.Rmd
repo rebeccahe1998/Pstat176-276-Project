@@ -1,0 +1,191 @@
+---
+title: "276 Project"
+author: "Ron Kinel, Rebecca He, Lingyu Zhou, Wenjing Li, Samran Khan"
+date: "5/22/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Problem 1
+
+```{r p1}
+StockVol <- function(histoPrice){
+
+  R <- array(0 , length(histoPrice)-1)
+  
+  for (i in 1:(length(R))){
+    R[i] <- log(histoPrice[i+1]/histoPrice[i])
+  }
+  
+  Daily_vol <- sqrt(var(R))
+  
+  
+  Annual_Vol <- Daily_vol*sqrt(252)
+  
+  return(Annual_Vol)
+}
+
+
+#change to the right path
+Prices <- read.csv(file = 'C:/Users/ron12/OneDrive/Desktop/PSTAT 276/IBM-MSFT-HAS.csv', 
+                   header = T, sep = ",")
+
+Prices
+
+IBM_Vol <- StockVol(Prices$IBM)
+MSFT_Vol <- StockVol(Prices$MSFT)
+HAS_Vol <- StockVol(Prices$HAS)
+
+IBM_Vol
+MSFT_Vol
+HAS_Vol
+```
+
+
+# Problem 2
+
+```{r p2}
+#n: number of paths
+#sigma: volatilty/variance of stock, not sd
+#S0: current stock price
+#t: terminal time in yearly unit
+#np: number of periods
+#r: interest rate
+#delta: continuous dividend yield of the stock
+
+StockPath <- function(n, sigma, S0, t, np=t, r, delta=0){
+  S <- array(0, dim=c(n,np+1))
+  S[,1] <- S0
+  Z <- matrix( rnorm(n*(np)), n, (np))
+  h <- t/np 
+  #h: length of each period = t/np
+  
+  for(i in 1:n){
+    for (j in 1:np) {
+      S[i,j+1] <- S[i,j]*exp((r-delta-(sigma^2)/2)*h + sqrt(h*(sigma^2))*Z[i,j])
+    }
+  }
+  
+  mypath <- S
+  return(mypath)
+}
+
+IBM_Path <- StockPath(20, sigma <- IBM_Vol ,S0 = Prices$IBM[length(Prices$IBM)] , 3 ,6,.06,0)
+MSFT_Path <- StockPath(20, sigma <- MSFT_Vol ,S0 = Prices$MSFT[length(Prices$MSFT)] , 3 ,6,.06,0)
+HAS_Path <- StockPath(20, sigma <- HAS_Vol ,S0 = Prices$HAS[length(Prices$HAS)] , 3 ,6,.06,0)
+
+
+IBM_Path
+MSFT_Path
+HAS_Path
+
+```
+
+
+# Problem 3
+
+```{r p3}
+set.seed(20)
+
+EurOptPrice <- function(n, sigma, S0, t, np=t, r, delta=0, k=S0){
+  mypath <- StockPath(n, sigma, S0, t, np, r, delta) #updates "mypath" from problem 2 with new values.
+  
+  disc_payoff <- array(0, dim=c(n,1)) #discounted payoff vector
+  
+  for (i in 1:n){
+    disc_payoff[i,1] <- exp(-r*t)*pmax(k-mypath[i,(np+1)] ,0)
+  }
+  
+  option_price <- mean(disc_payoff)
+  option_var <- var(disc_payoff)
+  
+   return(list( disc_payoff , option_price, option_var))
+}
+
+A <- EurOptPrice(100,.2,143,5,5,.04,0,143)
+
+A
+
+```
+
+#Problem 4
+
+```{r}
+AmeOptPrice <- function(C, t, r, k = C[1,1]){
+  #t is time in years until maturity -- needs to match t in stock path function?
+  degree0 <- function (x) rep(1,length(x)) 
+  degree1 <- function (x) x
+  degree2 <- function (x) x^2
+  model <- list(degree0,degree1,degree2) 
+  S0 <- C[1,1]
+  Paths <- nrow(C)
+  Steps <- ncol(C)-1
+  dt <- t/Steps #time interval for each step
+  df <- exp(-r*dt*(1:Steps)) #all discounting factors
+  num_model <-length(model) #number of functions used in model
+  C <- C[,-1] #first column is simply S0, so remove it 
+  Value_t <- pmax(k - C[,Steps], 0) #value at time t
+  exercise_time <- Steps*rep(1,Paths)
+  for (i in seq(from=Steps-1, to=1, by=-1)){ #make comparisons starting from the last two column
+    Payoff_Value <- pmax(k - C[,i], 0) 
+    gain <- which(Payoff_Value > 0) #find rows with positive gains
+    paths_gain <- C[gain,i] #generate a matrix with current row and column
+    regress_Matrix <- matrix(nrow=length(paths_gain), ncol= num_model)
+    for (j in 1:num_model) {
+      regress_Matrix[,j] <- sapply(paths_gain,model[[j]]) #apply regression on current matrix
+    }
+    discounted_payoff <- Value_t[gain]*df[exercise_time[gain]-i]
+    regress_model <- lm.fit(regress_Matrix,discounted_payoff)
+    Vector <- as.numeric(regress_model$coefficients)   
+    Holding_Value <- regress_Matrix%*%Vector
+    perform_time <- which(Payoff_Value[gain]>Holding_Value)
+    exercise_Paths <- gain[perform_time]
+    Value_t[exercise_Paths] <- Payoff_Value[exercise_Paths]
+    exercise_time[exercise_Paths] <- i #in i-th col, we exercise
+  }
+  price <- pmax(pmax(k-S0, 0),mean(Value_t*df[exercise_time]))
+  return(price)
+}
+
+
+
+Prices_IBM <- as.matrix(IBM_Path)
+Prices_MSFT <- as.matrix(MSFT_Path)
+Prices_HAS <- as.matrix(HAS_Path)
+
+
+r <- 0.06
+T <- 3
+
+
+IBM_put <- AmeOptPrice(Prices_IBM,T,r)
+MSFT_put <- AmeOptPrice(Prices_MSFT,T,r)
+HAS_put <- AmeOptPrice(Prices_HAS,T,r)
+
+IBM_put
+MSFT_put
+HAS_put
+```
+
+#Problem 5
+
+
+```{r p5}
+ContVariate <- function(n, Unknown_Vec, Known_Payoff, Known_Price, Known_Var){
+  #check that vectors are correct
+  Y <- Unknown_Vec[sample(1:length(Unknown_Vec), n)]
+  
+  
+  
+  
+  
+}
+
+```
+
+
+
