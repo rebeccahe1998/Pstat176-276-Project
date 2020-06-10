@@ -148,7 +148,7 @@ AmeOptPrice <- function(C, t, r, k = C[1,1]){
     exercise_time[exercise_Paths] <- i #in i-th col, we exercise
   }
   price <- pmax(pmax(k-S0, 0),mean(Value_t*df[exercise_time]))
-  return(price)
+  return(c(price,discounted_payoff))
 }
 
 
