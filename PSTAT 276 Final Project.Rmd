@@ -1,6 +1,6 @@
 ---
 title: "PSTAT 276 Final Project"
-author: "Ron Kinel, Rebecca He (176), Lingyu Zhou, Wenjing Li, Samran Khan"
+author: "Ron Kinel, Rebecca He, Lingyu Zhou, Wenjing Li, Samran Khan"
 date: "June 12, 2020"
 output: pdf_document
 ---
@@ -10,8 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-# Problem 1
-
+# Problem 1:
+### Historical volatility is based on historical prices and represents the degree of variability in the return of an asset. For this problem, we are analyzing daily returns for an indivdual stock so once we calculated the volatilty of our stock price data, we scaled it in order to obtain the annual volatility from the daily volatility.
 ```{r p1}
 StockVol <- function(histoPrice){
   R <- array(0 , length(histoPrice)-1)
@@ -26,10 +26,10 @@ StockVol <- function(histoPrice){
 
 
 # Problem 2
-
+### Once we are able to calcualte the historical volatility of our stock we can then move on to creating possible stock paths that can occur in the future. This is done through Monte Carlo estimations under the Black-Scholes model assumptions.
 ```{r p2}
 #n: number of paths
-#sigma: volatilty/variance of stock, not sd
+#sigma: volatilty of stock
 #S0: current stock price
 #t: terminal time in yearly unit
 #np: number of periods
@@ -55,7 +55,7 @@ StockPath <- function(n, sigma, S0, t, np=t, r, delta=0){
 
 
 # Problem 3
-
+### Next, we can look at the stock path simulation and see which scenarios lead us to having a European option with some value at expiration. We can come up with the value of this option at expiration for each path and estimate a price as well as the risk for the specified option.
 ```{r p3}
 EurOptPrice <- function(mypath, t, r, k){
   n <- nrow(mypath)
@@ -73,8 +73,9 @@ EurOptPrice <- function(mypath, t, r, k){
 }
 ```
 
-#Problem 4
-
+# Problem 4
+### (will finalize once sarah is finished)
+### For this funtion, the machine learning method we are implementing is the neural network method. This method will create a network, prepare data for it, then train the network and evaluate its performance on the test set.
 ```{r}
 AmeOptPrice <- function(C, t, r, k = C[1,1]){
   #t is time in years until maturity -- needs to match t in stock path function?
@@ -118,7 +119,8 @@ AmeOptPrice <- function(C, t, r, k = C[1,1]){
 ```
 
 
-#Problem 5
+# Problem 5
+### The control variates method is a variance reduction technique used in Monte Carlo methods. It exploits information about the errors in estimates of known quantities to reduce the error of an estimate of an unknown quantity
 
 ```{r p5}
 ContVariate <- function(Unknown_Vec, Known_Vec, Known_Value){
@@ -128,7 +130,7 @@ ContVariate <- function(Unknown_Vec, Known_Vec, Known_Value){
 }
 ```
 
-#Problem 6
+# Problem 6
 
 Choose your favorite underlying stock and a corresponding put option that expires in 1 year. Use 1 year libor yield as the interest rate. You also need to compute the continuous dividend yield. Apply the ContVariate function to the American put option price you computed. Do the analysis as if you want to convince your manager that this is the right way to estimate the price of American style option:
 
