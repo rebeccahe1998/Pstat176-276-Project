@@ -2,7 +2,6 @@
 library(neuralnet)
 AmeOptPrice <- function(C,t, sigma, r, k ,delta){
   S0 <- C[1,1]
-  #Paths <- nrow(C)
   steps <- ncol(C)-1
   dt <- t/steps #time interval for each step
   earlyprice<-array(0,dim=dim(C))
@@ -39,7 +38,7 @@ AmeOptPrice <- function(C,t, sigma, r, k ,delta){
     optionv[,j-1] <- pmax(earlyprice[,j-1],holdingvalue[,j-1])
   }
   final_payoff<-array(c(rep(0,nrow(earlyprice))))
-  for (z in nrow(earlyprice)){
+  for (z in 1:nrow(earlyprice)){
     wx<-which(earlyprice[z,]>holdingvalue[z,])
     if(length(wx)==0){
       final_payoff[z] <- optionv[z,ncol(optionv)]*exp(-r*t)
