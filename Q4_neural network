@@ -21,7 +21,6 @@ AmeOptPrice <- function(C,t, sigma, r, k ,delta){
     holdingvalue[i,ncol(holdingvalue)-1]<-mean(payoff)
   }
   optionv[,ncol(optionv)-1]<-pmax(holdingvalue[,ncol(holdingvalue)-1],earlyprice[,ncol(earlyprice)-1])
-  #print(optionv)
   #regression 
   # Random sampling
   #samplesize = 0.60 * nrow(data)
@@ -37,9 +36,9 @@ AmeOptPrice <- function(C,t, sigma, r, k ,delta){
     value<-C[,(j-1)]#last column before j
     for(l in 1:nrow(C)){
       p<-StockPath(276, sigma, S0=value[l], t/steps, np=1, r, delta)
-      price<-as.matrix(p)
-      predictedov1<-predict(regress_model,newdata=price)
-      predictedov<-predictedov*exp(-r*dt)
+      Sim_p <- data.frame(p)
+      predictedov1<-predict(regress_model,newdata=Sim_p$X2)
+      predictedov<-predictedov1*exp(-r*dt)
       holdingvalue[l,j-1]<-mean(predictedov)
     }
     optionv[,j-1]=pmax(earlyprice[,j-1],holdingvalue[,j-1])
@@ -56,9 +55,10 @@ AmeOptPrice <- function(C,t, sigma, r, k ,delta){
   }
   finalprice<-mean(payoff)
   varian<-var(payoff)
-  return(payoff,finalprice,varian)
+  return(list(finalprice,payoff,varian))
 }
 ```
+
 
 ```{r}
 Prices <- read.csv(file = '~/Documents/PSTAT 276/IBM-MSFT-HAS.csv', header = T, sep = ",")
