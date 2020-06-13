@@ -1,9 +1,8 @@
 ```{r}
 library(neuralnet)
 AmeOptPrice <- function(C,t, sigma, r, k ,delta){
-  n<-nrow(C)
-  #t is time in years until maturity -- needs to match t in stock path function?
   S0 <- C[1,1]
+  #Paths <- nrow(C)
   steps <- ncol(C)-1
   dt <- t/steps #time interval for each step
   earlyprice<-array(0,dim=dim(C))
@@ -15,46 +14,43 @@ AmeOptPrice <- function(C,t, sigma, r, k ,delta){
   mcp<-C[,ncol(C)-1]
   #simulate n paths
   for (i in 1:nrow(C)){
-    price<-StockPath(276, sigma, mcp[i], dt, np=1, r, delta) #we need to input sigma
+    price<-StockPath(100, sigma, mcp[i], t, np=1, r, delta)
     payoff<-pmax(k-price[,ncol(price)],0)*exp(-r*dt)
     holdingvalue[i,ncol(holdingvalue)-1]<-mean(payoff)
   }
-  optionv[,ncol(optionv)-1]<-pmax(holdingvalue[,ncol(holdingvalue)-1],earlyprice[,ncol(earlyprice)-1])
-  #regression 
-  # Random sampling
-  #samplesize = 0.60 * nrow(data)
-  #set.seed(80)
-  #index = sample( seq_len ( nrow ( data ) ), size = samplesize )
+  optionv[,ncol(optionv)-1]<-pmax(holdingvalue[,ncol(holdingvalue)-1],
+                                  earlyprice[,ncol(earlyprice)-1])
   
   #fit neural networks
   for (j in seq(from=ncol(holdingvalue)-1, to=2, by=-1)){
     X<-array(C[,j])
     Y<-array(optionv[,j])
-    CCC<-data.frame(X,Y)
-    regress_model <- neuralnet(Y~X,CCC)
+    newC<-data.frame(X,Y)
+    regress_model <- neuralnet(Y~X,newC,linear.output = FALSE)
     value<-C[,(j-1)]#last column before j
     for(l in 1:nrow(C)){
-      p<-StockPath(276, sigma, S0=value[l], t/steps, np=1, r, delta)
+      p<-StockPath(100, sigma, S0=value[l], t/steps, np=1, r, delta)
       Sim_p <- data.frame(p)
-      predictedov1<-predict(regress_model,newdata=Sim_p$X2)
+      Use <- data.frame(Sim_p$X2)
+      predictedov1<-predict(regress_model,newdata=Use)
       predictedov<-predictedov1*exp(-r*dt)
       holdingvalue[l,j-1]<-mean(predictedov)
     }
-    optionv[,j-1]=pmax(earlyprice[,j-1],holdingvalue[,j-1])
+    optionv[,j-1] <- pmax(earlyprice[,j-1],holdingvalue[,j-1])
   }
-  payoff<-c()
+  final_payoff<-array(c(rep(0,nrow(earlyprice))))
   for (z in nrow(earlyprice)){
     wx<-which(earlyprice[z,]>holdingvalue[z,])
-    if(nrow(wx)==0){
-      payoff[z]=optionv[z,ncol(optionv)]*exp(-r*t)
+    if(length(wx)==0){
+      final_payoff[z] <- optionv[z,ncol(optionv)]*exp(-r*t)
     }
     else{
-      payoff[z]<-optionv[z,wx[1]]*exp(-r*wx[1]*dt)
+      final_payoff[z] <- optionv[z,wx[1]]*exp(-r*wx[1]*dt)
     }
   }
-  finalprice<-mean(payoff)
-  varian<-var(payoff)
-  return(list(finalprice,payoff,varian))
+  finalprice<-mean(final_payoff)
+  varian<-var(final_payoff)
+  return(list(finalprice,final_payoff,varian))
 }
 ```
 
