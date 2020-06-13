@@ -18,9 +18,9 @@ AmeOptPrice <- function(C,t, steps, r, k ,delta){
   for (i in 1:nrow(C)){
     price<-StockPath(276, sigma, mcp[i], t, np=steps, r, delta=0) #we need to input sigma
     payoff<-pmax(k-price[,ncol(price)],0)*exp(-r*dt)
-    holdingvalue[,ncol(holdingvalue)-1]<-mean(payoff)
+    holdingvalue[i,ncol(holdingvalue)-1]<-mean(payoff)
   }
-  optionv<-pmax(holdingvalue[,ncol(holdingvalue)-1],earlyprice[,ncol(earlyprice)-1])
+  optionv[,ncol(optionv)-1]<-pmax(holdingvalue[,ncol(holdingvalue)-1],earlyprice[,ncol(earlyprice)-1])
   #regression 
   # Random sampling
   #samplesize = 0.60 * nrow(data)
@@ -29,13 +29,15 @@ AmeOptPrice <- function(C,t, steps, r, k ,delta){
 
   #fit neural networks
   for (j in seq(from=ncol(holdingvalue)-1, to=2, by=-1)){
-    X<-C[,j]
-    Y<-optionv[,j]
-    regress_model <- neuralnet(X~Y,C)
-    value<-C[,j-1]#last column before j
+    X<-array(C[,j])
+    Y<-array(optionv[,j])
+    CC<-cbind(X,Y)
+    regress_model <- neuralnet(Y~X,CC)
+    value<-C[,(j-1)]#last column before j
     for(k in nrow(C)){
-      price<-StockPath(n, sigma, S0=value, t, np=t, r, delta=0)
-      predictedov1<-predict(regress_model,data=price)
+      p<-StockPath(276, sigma, S0=value[k], t, np=t, r, delta=0)
+      price<-as.data.frame(p)
+      predictedov1<-predict(regress_model,newdata=price)
       predictedov<-predictedov*exp(-r*dt)
       holdingvalue[k,j-1]<-mean(predictedov)
     }
@@ -74,6 +76,7 @@ Prices_MSFT <- as.matrix(MSFT_Path)
 Prices_HAS <- as.matrix(HAS_Path)
 r <- 0.06
 T <- 3
+Prices_IBM<-as.data.frame(Prices_IBM)
 IBM_put <- AmeOptPrice(C=Prices_IBM,T, steps, r, k=20,delta)
 MSFT_put <- AmeOptPrice(Prices_MSFT,T,r)
 HAS_put <- AmeOptPrice(Prices_HAS,T,r)
