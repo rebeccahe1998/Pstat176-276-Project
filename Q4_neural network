@@ -1,0 +1,62 @@
+```{r}
+library(neuralnet)
+AmeOptPrice <- function(steps,C, t, r, k = C[1,1]){
+  #t is time in years until maturity -- needs to match t in stock path function?
+  #S0 <- C[1,1]
+  #Paths <- nrow(C)
+  #Steps <- ncol(C)-1
+  dt <- t/steps #time interval for each step
+  earlyprice<-pmax(k-steps)
+  holdingvalue<-array(0,dim=c(steps,1))#create an array for holding values
+  optionv<-array(0,dim=c(steps,1)) # creat an array for option
+  holdingvalue[,-1]<-optionv[,-1]<-holdingvalue[,-1]
+  mcp<-steps[,-2]
+  for (i in nrow(mypath)){
+    price<-StockPath(n, sigma, S0, t, np=t, r, delta=0)
+    payoff<-pmax(k-price[,-1],0)*exp(-r*dt)
+    holdingvalue[,-2]<-mean(payoff)
+  }
+  optionv<-pmax(holdingvalue[,-2],earlyprice[,-2])
+  #regression 
+  # Random sampling
+  #samplesize = 0.60 * nrow(data)
+  #set.seed(80)
+  #index = sample( seq_len ( nrow ( data ) ), size = samplesize )
+
+  # Create training and test set
+  #datatrain = data[ index, ]
+  #datatest = data[ -index, ]
+  ## Scale data for neural network
+
+  #max = apply(data , 2 , max)
+  #min = apply(data, 2 , min)
+  #scaled = as.data.frame(scale(data, center = min, scale = max - min))
+  #fit neural networks
+  set.seed(2)
+  for (j in seq(1,length(holdingvalue[0]))){
+    X=steps[,-j]
+    Y<-optionv[,-j]
+    regress_model <- neuralnet(X~Y, hidden= 3 , linear.output = T)
+    value<-steps[,-i-1]
+    for(k in length(steps)){
+      price<-StockPath(n, sigma, S0, t, np=t, r, delta=0)
+      predictedov<-compute(regress_model)
+      holdingvalue[k,-j-1]<-mean(predictedov)
+    }
+    optionv[,-j-1]=pmax(earlyprice[,-j-1],holdingvalue[,-j-1])
+  }
+  payoff<-c()
+  for (z in length(earlyprice)){
+    #wx<-earlyprice[z,]>holdingvalue[z,]
+    if(length(wx)==0){
+      payoff[z]=optionv[z,-1]*exp(-r*t)
+    }
+    else{
+      payoff[z]<-optionv[z,wx[0]]*exp(-r*wx[0]*dt)
+    }
+  }
+  finalprice<-mean(payoff)
+  varian<-var(payoff)
+  return(payoff,finalprice,varian)
+}
+```
