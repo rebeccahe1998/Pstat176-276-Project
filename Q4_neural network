@@ -3,8 +3,7 @@ library(neuralnet)
 AmeOptPrice <- function(C,t, sigma, r, k ,delta){
   n<-nrow(C)
   #t is time in years until maturity -- needs to match t in stock path function?
-  #S0 <- C[1,1]
-  #Paths <- nrow(C)
+  S0 <- C[1,1]
   steps <- ncol(C)-1
   dt <- t/steps #time interval for each step
   earlyprice<-array(0,dim=dim(C))
