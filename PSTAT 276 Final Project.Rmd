@@ -1,0 +1,275 @@
+---
+title: "PSTAT 276 Final Project"
+author: "Ron Kinel, Rebecca He (176), Lingyu Zhou, Wenjing Li, Samran Khan"
+date: "June 12, 2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Problem 1
+
+Make a function StockVol to calibrate the stock volatility under geometric Brownian motion model. Input histoPrice is an array of 1-year historical prices. You can choose a stock that does not pay dividends for simplicity. The function should return a number that is the historical volatility of the stock.
+
+```{r p1}
+StockVol <- function(histoPrice){
+  R <- array(0 , length(histoPrice)-1)
+  for (i in 1:(length(R))){
+    R[i] <- log(histoPrice[i+1]/histoPrice[i])
+  }
+  Daily_vol <- sqrt(var(R))
+  Annual_Vol <- Daily_vol*sqrt(252)
+  return(Annual_Vol)
+}
+```
+
+Historical volatility is based on historical prices and represents the degree of variability in the return of an asset. For this problem, we are analyzing daily returns for an indivdual stock so once we calculated the volatilty of our stock price data, we scaled it in order to obtain the annual volatility from the daily volatility.
+
+# Problem 2
+
+Make a function StockPath to generate n stock paths where n is one of the inputs, as well as sigma which is the volatility of the stock. Other inputs needed (might not be limited to) are S0: current stock price; T: terminal time in yearly unit; np: number of time periods; r: interest rate; delta: continuous dividend yield of the stock.
+
+```{r p2}
+#n: number of paths
+#sigma: volatilty/variance of stock, not sd
+#S0: current stock price
+#t: terminal time in yearly unit
+#np: number of periods
+#r: interest rate
+#delta: continuous dividend yield of the stock
+StockPath <- function(n, sigma, S0, t=1, np=52, r, delta=0){
+  S <- array(0, dim=c(n,np+1))
+  S[,1] <- S0
+  Z <- matrix( rnorm(n*(np)), n, (np))
+  h <- t/np 
+  #h: length of each period = t/np
+  
+  for(i in 1:n){
+    for (j in 1:np){
+      S[i,j+1] <- S[i,j]*exp((r-delta-((sigma^2)/2))*h + sqrt(h*(sigma^2))*Z[i,j])
+    }
+  }
+  
+  mypath <- S
+  return(mypath)
+}
+```
+
+Once we are able to calcualte the historical volatility of our stock, we can simulate possible stock paths based on stock and time parameters. This is done through Monte Carlo simulation under the Black-Scholes model assumptions.
+
+# Problem 3
+
+Make a function EurOptPrice that takes the stock paths to generate the European put option price through Monte Carlo method. One input is n stock paths. The function should return the discounted payoff vector, price, and variance.
+
+```{r p3}
+EurOptPrice <- function(mypath, t, r, k){
+  n <- nrow(mypath)
+  np <- ncol(mypath) - 1
+  disc_payoff <- array(0, dim=c(n,1)) #discounted payoff vector
+  
+  for (i in 1:n){
+    disc_payoff[i,1] <- exp(-r*t)*pmax(k-mypath[i,(np+1)] ,0)
+  }
+  
+  option_price <- mean(disc_payoff)
+  option_var <- var(disc_payoff)
+  
+  return(list( option_price,disc_payoff, option_var))
+}
+```
+
+Using the stock path simulation we can obtain a payoff for each scenarios for a European option with with a given strike and expiration expiration. We can discount the payoff for each path using a given interest rate and estimate a price as well as the risk for the specified option by taking the average and standard deviation of the discounted payoffs.
+
+#Problem 4
+
+Make a function AmeOptPrice that takes the stock paths to generate the American put option price without control variates. The function should return the discounted payoff vector, price, and variance. In this part, you will need to implement some regression method and you are required to do it by using machine learning or deep learning. Make sure to explain what you did in the analysis file.
+
+
+```{r}
+library(neuralnet)
+AmeOptPrice <- function(C,t, sigma, r, k ,delta){
+  n<-nrow(C)
+  #t is time in years until maturity -- needs to match t in stock path function?
+  S0 <- C[1,1]
+  #Paths <- nrow(C)
+  steps <- ncol(C)-1
+  dt <- t/steps #time interval for each step
+  earlyprice<-array(0,dim=dim(C))
+  earlyprice<-pmax(k-C,0) #if you exercise early, then use this price
+  holdingvalue<-array(0,dim=dim(C))#create an array for holding values
+  optionv<-array(0,dim=dim(C)) # creat an array for option
+  holdingvalue[,ncol(holdingvalue)]<-earlyprice[,ncol(earlyprice)]
+  optionv[,ncol(optionv)]<-earlyprice[,ncol(earlyprice)]
+  mcp<-C[,ncol(C)-1]
+  #simulate n paths
+  for (i in 1:nrow(C)){
+    price<-StockPath(276, sigma, mcp[i], dt, np=1, r, delta) #we need to input sigma
+    payoff<-pmax(k-price[,ncol(price)],0)*exp(-r*dt)
+    holdingvalue[i,ncol(holdingvalue)-1]<-mean(payoff)
+  }
+  optionv[,ncol(optionv)-1]<-pmax(holdingvalue[,ncol(holdingvalue)-1],earlyprice[,ncol(earlyprice)-1])
+  #regression 
+  # Random sampling
+  #samplesize = 0.60 * nrow(data)
+  #set.seed(80)
+  #index = sample( seq_len ( nrow ( data ) ), size = samplesize )
+  
+  #fit neural networks
+  for (j in seq(from=ncol(holdingvalue)-1, to=2, by=-1)){
+    X<-array(C[,j])
+    Y<-array(optionv[,j])
+    CCC<-data.frame(X,Y)
+    regress_model <- neuralnet(Y~X,CCC)
+    value<-C[,(j-1)]#last column before j
+    for(l in 1:nrow(C)){
+      p<-StockPath(276, sigma, S0=value[l], t/steps, np=1, r, delta)
+      Sim_p <- data.frame(p)
+      Use <- data.frame(Sim_p$X2)
+      predictedov1<-predict(regress_model,newdata=Use)
+      predictedov<-predictedov1*exp(-r*dt)
+      holdingvalue[l,j-1]<-mean(predictedov)
+    }
+    optionv[,j-1]=pmax(earlyprice[,j-1],holdingvalue[,j-1])
+  }
+  payoff<-c()
+  for (z in nrow(earlyprice)){
+    wx<-which(earlyprice[z,]>holdingvalue[z,])
+    if(length(wx)==0){
+      payoff[z]=optionv[z,ncol(optionv)]*exp(-r*t)
+    }
+    else{
+      payoff[z]<-optionv[z,wx[1]]*exp(-r*wx[1]*dt)
+    }
+  }
+  finalprice<-mean(payoff)
+  varian<-var(payoff)
+  return(list(finalprice,payoff,varian))
+}
+```
+
+UPDATE BELOW!
+
+For this funtion, the machine learning method we are implementing is the neural network method. This method will create a network, prepare data for it, then train the network and evaluate its performance on the test set.
+
+#Problem 5
+
+Make a function ContVariate to implement the control variates method. Note that
+this part is independent of the prices you computed. You should be able to apply this function to
+any vectors and estimations.
+
+```{r p5}
+ContVariate <- function(Unknown_Vec, Known_Vec, Known_Value){
+  B <- cov(Unknown_Vec, Known_Vec)/var(Known_Vec)
+  Ca <- Unknown_Vec + as.numeric(B)*(Known_Vec - Known_Value)
+  return(mean(Ca))
+}
+```
+
+The control variates method is a variance reduction technique used in Monte Carlo methods. It exploits information about the errors in estimates of known quantities to reduce the error of an estimate of an unknown quantity.
+
+
+#Problem 6
+
+Choose your favorite underlying stock and a corresponding put option that expires in 1 year. Use 1 year libor yield as the interest rate. You also need to compute the continuous dividend yield. Apply the ContVariate function to the American put option price you computed. Do the analysis as if you want to convince your manager that this is the right way to estimate the price of American style option:
+
+We chose Microsoft(MSFT) to do our analysis on. We first import the last year of data for Microsoft. There are 252 trading days between 06/13/19 and 06/11/20 which are the start and end dates of our data. 
+
+According to nasdaq.com, MSFT Dividend History in this period is as follows:
+05/20/2020: $0.51 
+02/19/2020: $0.51
+11/20/2019: $0.51
+08/14/2019: $0.46
+
+According to macrotrends.net, the current 1 year LIBOR rate as of June 04, 2020 is 0.63%. Although it is better to use advanced intrest rate modeling, the 1 year LIBOR is a global "benchmark" for short-term interest and so we will use it instead.
+
+Below we input MSFT last year stock information and extract the closing prices. We will use the function from problem 1 to compute MSFT's annual volatility. We also assign the 1-year LIBOR rate and compute the continuous dividend yield using the Dividend History above. All Data was extracted from Yahoo! Finance.
+
+```{r}
+#Input Prices, Spreadsheet included in pproject submission
+MSFT <- read.csv(file = 'C:/Users/ron12/OneDrive/Desktop/PSTAT 276/MSFT.csv', 
+                   header = T, sep = ",")
+
+MSFT_Price <- MSFT$Close
+
+LIBOR <- 0.0063
+
+MSFT_Vol <- StockVol(MSFT_Price)
+
+MSFT_Div <- log((1 + (0.51/MSFT$Close[MSFT$Date == "5/20/2020"]))*(1 + (0.51/MSFT$Close[MSFT$Date == "2/19/2020"]))*
+  (1 + (0.51/MSFT$Close[MSFT$Date == "11/20/2019"]))*(1 + (0.46/MSFT$Close[MSFT$Date == "8/14/2019"])))
+
+cat("The annual volatility for MSFT is:", MSFT_Vol, "\n\n")
+cat("The continuous dividend yield is:", MSFT_Div)
+```
+
+Next, we will simulate the next year's MSFT prices by weeks using our StockPath function from Problem 2. This simulation is done using standard Monte Carlo method. For more information, see the description below Problem 2 chunk.
+
+We use weeks because it splits a year into a large number of time periods but its not as computationally heavy as using days. Additionally, it is common to see 1-year stock analysis done in weeks. We will use 100 simulations. This is not a very large amount but should still be sufficient for our analysis while remaining computationally quick. 
+
+```{r}
+set.seed(34)
+
+n = 20
+T = 1 
+np = 52
+r <- LIBOR
+
+MSFT_Path <- StockPath(n, MSFT_Vol , MSFT_Price[length(MSFT_Price)] , T, np, r, MSFT_Div)
+
+``` 
+
+For our analysis, we will use the 1-year Put:
+MSFT|20210618|190.00P with Last = 27.25, Bid = 24.1, and Ask = 28.15.  
+This put expires in almost exactly a year and should be a good comparison point for our analysis.
+
+First, we will use the American Put function from problem 4 to find the Monte-Carlo Machine-Learning Adjusted price. This function... For more information on how the function works, see the explanation following Problem 4 chunk above. 
+
+```{r}
+K <- 190
+
+Simulated_MSFT_Prices <- as.matrix(MSFT_Path)
+
+
+MSFT_put <- AmeOptPrice(Simulated_MSFT_Prices , T, MSFT_Div,r, K, MSFT_Div)
+
+MSFT_put[[1]]
+```
+
+The result above preforms...
+
+
+Next, we will use the Black-Scholes models and our European Put Option Function from problem 4 to incorporate in the control variates function from Problem 5 with our result from the previous part. The Control Variates method is a variance reduction technique applied on Monte Carlo simulations. For more information about the Control Variate technique read the the discription following the chunk in Problem 5. 
+
+We obtain the Black-Scholes price using the bsput function from the 'derivmkts' library and the payoffs from our simulated payoffs using the European Option function from Problem 3. For more information on how this funtion works, see the explanation following Problem 3 chunk.
+
+```{r}
+library(derivmkts)
+```
+
+```{r}
+
+MSFT_Euro_True <- bsput(MSFT_Price[length(MSFT_Price)], K, MSFT_Vol, r, T, MSFT_Div)
+
+cat("The true European BS Put price is:" , MSFT_Euro_True, "\n\n")
+
+MSFT_Euro_Sim <- EurOptPrice(MSFT_Path, T, r, K)
+
+cat("The Simulated Put price is:", MSFT_Euro_Sim[[1]])
+```
+
+Using our results above with control variates: 
+
+```{r}
+Cont_Variate_put <- ContVariate(MSFT_put[[2]], MSFT_Euro_Sim[[2]], MSFT_Euro_True)
+
+Cont_Variate_put
+```
+
+This result...
+
+
+
+
