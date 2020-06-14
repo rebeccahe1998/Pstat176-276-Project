@@ -87,7 +87,6 @@ Using the stock path simulation we can obtain a payoff for each scenarios for a 
 
 Make a function AmeOptPrice that takes the stock paths to generate the American put option price without control variates. The function should return the discounted payoff vector, price, and variance. In this part, you will need to implement some regression method and you are required to do it by using machine learning or deep learning. Make sure to explain what you did in the analysis file.
 
-
 ```{r}
 library(neuralnet)
 AmeOptPrice <- function(C,t, sigma, r, k ,delta){
@@ -183,7 +182,6 @@ ContVariate <- function(Unknown_Vec, Known_Vec, Known_Value){
 ```
 
 The control variates method is a variance reduction technique used in Monte Carlo methods. It exploits information about the errors in estimates of known quantities to reduce the error of an estimate of an unknown quantity.
-
 
 # Problem 6
 
