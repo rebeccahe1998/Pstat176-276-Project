@@ -34,7 +34,7 @@ Make a function StockPath to generate n stock paths where n is one of the inputs
 
 ```{r p2}
 #n: number of paths
-#sigma: volatilty/variance of stock, not sd
+#sigma: volatilty of stock
 #S0: current stock price
 #t: terminal time in yearly unit
 #np: number of periods
