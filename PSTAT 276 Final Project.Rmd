@@ -158,15 +158,15 @@ AmeOptPrice <- function(C,t, sigma, r, k ,delta){
 }
 ```
 
-For this funtion, the machine learning method we are implementing is the neural network method. This method will create a network, prepare data for it, then train the network and evaluate its performance on the test set. 
+#For this funtion, the machine learning method we are implementing is the neural network method. This method will create a network, prepare data for it, then train the network and evaluate its performance on the test set. 
 
-We first assign values to last column of option values and holding values with payoffs. After dealing with last column, we move forward to second to last column. We iterate through each row in our dataset and use every value to perform simulations based on StockPath function. After that, we can make comparsion between holding values and payoffs to get option values at second to last column. 
+#We first assign values to last column of option values and holding values with payoffs. After dealing with last column, we move forward to second to last column. We iterate through each row in our dataset and use every value to perform simulations based on StockPath function. After that, we can make comparsion between holding values and payoffs to get option values at second to last column. 
 
-Next, we work backwards from the second to last column to beginning. We build another for-loop to make iteration. In this part, we build a neural network model with changing stock prices as predictor and changing option values as response. We also generate new simulations based on new current stock prices. Then, we make predictions based on neural network model and get probabilites which determine our prediction scores. By multiplying probabilites and current stock prices, we can get estimated prices which can be used to find holding values by taking average. And we can get all values for option values by comparing holding values and payoffs.
+#Next, we work backwards from the second to last column to beginning. We build another for-loop to make iteration. In this part, we build a neural network model with changing stock prices as predictor and changing option values as response. We also generate new simulations based on new current stock prices. Then, we make predictions based on neural network model and get probabilites which determine our prediction scores. By multiplying probabilites and current stock prices, we can get estimated prices which can be used to find holding values by taking average. And we can get all values for option values by comparing holding values and payoffs.
 
-The last part of codes is used to determine exercise times. By comparing payoffs and holding values, we can get indexes for exercising times. If there is no exercise time, we simply discount current option value to beginning. If there are exercise times, we choose the smallest index and discount corresponding periods. 
+#The last part of codes is used to determine exercise times. By comparing payoffs and holding values, we can get indexes for exercising times. If there is no exercise time, we simply discount current option value to beginning. If there are exercise times, we choose the smallest index and discount corresponding periods. 
 
-Lastly, we can get price and variance from values of option prices. 
+#Lastly, we can get price and variance from values of option prices. 
 
 #Problem 5
 
