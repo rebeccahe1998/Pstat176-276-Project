@@ -83,7 +83,7 @@ EurOptPrice <- function(mypath, t, r, k){
 
 Using the stock path simulation we can obtain a payoff for each scenarios for a European option with with a given strike and expiration expiration. We can discount the payoff for each path using a given interest rate and estimate a price as well as the risk for the specified option by taking the average and standard deviation of the discounted payoffs.
 
-#Problem 4
+# Problem 4
 
 Make a function AmeOptPrice that takes the stock paths to generate the American put option price without control variates. The function should return the discounted payoff vector, price, and variance. In this part, you will need to implement some regression method and you are required to do it by using machine learning or deep learning. Make sure to explain what you did in the analysis file.
 
@@ -158,17 +158,17 @@ AmeOptPrice <- function(C,t, sigma, r, k ,delta){
 }
 ```
 
-#For this funtion, the machine learning method we are implementing is the neural network method. This method will create a network, prepare data for it, then train the network and evaluate its performance on the test set. 
+## For this funtion, the machine learning method we are implementing is the neural network method. This method will create a network, prepare data for it, then train the network and evaluate its performance on the test set. 
 
-#We first assign values to last column of option values and holding values with payoffs. After dealing with last column, we move forward to second to last column. We iterate through each row in our dataset and use every value to perform simulations based on StockPath function. After that, we can make comparsion between holding values and payoffs to get option values at second to last column. 
+## We first assign values to last column of option values and holding values with payoffs. After dealing with last column, we move forward to second to last column. We iterate through each row in our dataset and use every value to perform simulations based on StockPath function. After that, we can make comparsion between holding values and payoffs to get option values at second to last column. 
 
-#Next, we work backwards from the second to last column to beginning. We build another for-loop to make iteration. In this part, we build a neural network model with changing stock prices as predictor and changing option values as response. We also generate new simulations based on new current stock prices. Then, we make predictions based on neural network model and get probabilites which determine our prediction scores. By multiplying probabilites and current stock prices, we can get estimated prices which can be used to find holding values by taking average. And we can get all values for option values by comparing holding values and payoffs.
+## Next, we work backwards from the second to last column to beginning. We build another for-loop to make iteration. In this part, we build a neural network model with changing stock prices as predictor and changing option values as response. We also generate new simulations based on new current stock prices. Then, we make predictions based on neural network model and get probabilites which determine our prediction scores. By multiplying probabilites and current stock prices, we can get estimated prices which can be used to find holding values by taking average. And we can get all values for option values by comparing holding values and payoffs.
 
-#The last part of codes is used to determine exercise times. By comparing payoffs and holding values, we can get indexes for exercising times. If there is no exercise time, we simply discount current option value to beginning. If there are exercise times, we choose the smallest index and discount corresponding periods. 
+## The last part of codes is used to determine exercise times. By comparing payoffs and holding values, we can get indexes for exercising times. If there is no exercise time, we simply discount current option value to beginning. If there are exercise times, we choose the smallest index and discount corresponding periods. 
 
-#Lastly, we can get price and variance from values of option prices. 
+## Lastly, we can get price and variance from values of option prices. 
 
-#Problem 5
+# Problem 5
 
 Make a function ContVariate to implement the control variates method. Note that
 this part is independent of the prices you computed. You should be able to apply this function to
@@ -185,7 +185,7 @@ ContVariate <- function(Unknown_Vec, Known_Vec, Known_Value){
 The control variates method is a variance reduction technique used in Monte Carlo methods. It exploits information about the errors in estimates of known quantities to reduce the error of an estimate of an unknown quantity.
 
 
-#Problem 6
+# Problem 6
 
 Choose your favorite underlying stock and a corresponding put option that expires in 1 year. Use 1 year libor yield as the interest rate. You also need to compute the continuous dividend yield. Apply the ContVariate function to the American put option price you computed. Do the analysis as if you want to convince your manager that this is the right way to estimate the price of American style option:
 
