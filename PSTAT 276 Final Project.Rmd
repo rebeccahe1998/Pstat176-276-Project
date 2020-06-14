@@ -211,7 +211,7 @@ cat("The annual volatility for MSFT is:", MSFT_Vol, "\n\n")
 cat("The continuous dividend yield is:", MSFT_Div)
 ```
 
-Next, we will simulate the next 1-year MSFT prices by weeks using our StockPath function from Problem 2. This simulation is done using standard Monte Carlo method. For more information, see the description below Problem 2 chunk.
+Next, we will simulate the next 1-year MSFT prices by weeks using our StockPath function from Problem 2. This simulation is done using standard Monte Carlo method. For more information, see the description below Problem 2 .
 
 We use weeks because it splits a year into a large number of time periods but its not as computationally heavy as using days. Additionally, it is common to see 1-year stock analysis done in weeks. We will use 200 simulations. This is not a very large amount but should still be sufficient for our analysis while remaining computationally quick. 
 
@@ -228,7 +228,7 @@ For our analysis, we will use the 1-year Put:
 MSFT|20210618|190.00P with Last = 27.25, Bid = 24.1, and Ask = 28.15.  
 This put expires in almost exactly a year and should be a good comparison point for our analysis.
 
-First, we will use the American Put function from problem 4 to find the Monte-Carlo Machine-Learning Adjusted price. This function employs a neural net and recursive simulation at each time node to estimate the best price for the American Option. For more information on how the function works, see the explanation following Problem 4 chunk above. 
+First, we will use the American Put function from problem 4 to find the Monte-Carlo Machine-Learning Adjusted price. This function employs a neural net and recursive simulation at each time node to estimate the best price for the American Option. For more information on how the function works, see the explanation following Problem 4 above. 
 
 ```{r}
 K <- 170
@@ -243,7 +243,7 @@ The result above performs okay - about $4 above the current equivalent option pr
 
 Next, we will use the Black-Scholes models and our European Put Option Function from Problem 4 to incorporate in the control variates function from Problem 5 with our result from the previous part. The Control Variates method is a variance reduction technique applied on Monte Carlo simulations. For more information about the Control Variate technique read the the discription following the chunk in Problem 5. 
 
-We obtain the Black-Scholes price using the bsput function from the 'derivmkts' library and the payoffs from our simulated payoffs using the European Option function from Problem 3. For more information on how this funtion works, see the explanation following Problem 3 chunk.
+We obtain the Black-Scholes price using the bsput function from the 'derivmkts' library and the payoffs from our simulated payoffs using the European Option function from Problem 3. For more information on how this funtion works, see the explanation following Problem 3.
 
 ```{r}
 library(derivmkts)
@@ -263,7 +263,7 @@ Cont_Variate_put <- ContVariate(MSFT_put[[2]], MSFT_Euro_Sim[[2]], MSFT_Euro_Tru
 Cont_Variate_put
 ```
 
-This result did not effect our option price to significantly. It shifted our result in the opposite direction of the real option price. This fact causes us to think that maybe the current price for this option is too low. Both our machine-learning MC price and the control variate estimation estimated higher prices than the market which leads us to belive the price should certainly be increased to avoid arbitrage opportunities.  
+This result did not effect our option price too significantly. It shifted our result in the opposite direction of the real option price. This fact causes us to think that maybe the current price for this option is too low. Both our machine-learning MC price and the control variate estimation estimated higher prices than the market which leads us to belive the price should certainly be increased to avoid arbitrage opportunities.  
 
 
 
