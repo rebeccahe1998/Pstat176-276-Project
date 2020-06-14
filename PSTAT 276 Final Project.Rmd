@@ -77,7 +77,7 @@ EurOptPrice <- function(mypath, t, r, k){
   option_price <- mean(disc_payoff)
   option_var <- var(disc_payoff)
   
-  return(list( option_price,disc_payoff, option_var))
+  return(list(option_price,disc_payoff, option_var))
 }
 ```
 
@@ -91,68 +91,82 @@ Make a function AmeOptPrice that takes the stock paths to generate the American 
 ```{r}
 library(neuralnet)
 AmeOptPrice <- function(C,t, sigma, r, k ,delta){
-  n<-nrow(C)
-  #t is time in years until maturity -- needs to match t in stock path function?
   S0 <- C[1,1]
-  #Paths <- nrow(C)
   steps <- ncol(C)-1
   dt <- t/steps #time interval for each step
-  earlyprice<-array(0,dim=dim(C))
-  earlyprice<-pmax(k-C,0) #if you exercise early, then use this price
-  holdingvalue<-array(0,dim=dim(C))#create an array for holding values
-  optionv<-array(0,dim=dim(C)) # creat an array for option
-  holdingvalue[,ncol(holdingvalue)]<-earlyprice[,ncol(earlyprice)]
-  optionv[,ncol(optionv)]<-earlyprice[,ncol(earlyprice)]
-  mcp<-C[,ncol(C)-1]
-  #simulate n paths
-  for (i in 1:nrow(C)){
-    price<-StockPath(276, sigma, mcp[i], dt, np=1, r, delta) #we need to input sigma
-    payoff<-pmax(k-price[,ncol(price)],0)*exp(-r*dt)
-    holdingvalue[i,ncol(holdingvalue)-1]<-mean(payoff)
+  early_price <- array(0,dim=dim(C))  #create an array for payoffs
+  early_price <- pmax(k-C,0) #generate a matrix for payoffs
+  holding_value <- array(0,dim=dim(C)) #create an array for holding values
+  option_value <- array(0,dim=dim(C)) #creat an array for option values
+  holding_value[,ncol(holding_value)] <- early_price[,ncol(early_price)]
+  option_value[,ncol(option_value)] <- early_price[,ncol(early_price)]
+    #assign last column values of holding value and option value as last column values of payoffs
+  Second_to_last <- C[,ncol(C)-1] 
+    #start iterating from second to last column
+  for (i in 1:nrow(C)){ 
+    #iterate each row of second to last column and get all holding values
+    Sim_St <- StockPath(200, sigma, Second_to_last[i], dt, np=1, r, delta)
+    current_payoff <- pmax(k-Sim_St[,ncol(Sim_St)],0)*exp(-r*dt)
+    holding_value[i,ncol(holding_value)-1] <- mean(current_payoff)
   }
-  optionv[,ncol(optionv)-1]<-pmax(holdingvalue[,ncol(holdingvalue)-1],earlyprice[,ncol(earlyprice)-1])
-  #regression 
-  # Random sampling
-  #samplesize = 0.60 * nrow(data)
-  #set.seed(80)
-  #index = sample( seq_len ( nrow ( data ) ), size = samplesize )
+  option_value[,ncol(option_value)-1]<-
+    pmax(holding_value[,ncol(holding_value)-1],
+         early_price[,ncol(early_price)-1]) #compare to get option value at second to last column
   
-  #fit neural networks
-  for (j in seq(from=ncol(holdingvalue)-1, to=2, by=-1)){
-    X<-array(C[,j])
-    Y<-array(optionv[,j])
-    CCC<-data.frame(X,Y)
-    regress_model <- neuralnet(Y~X,CCC)
-    value<-C[,(j-1)]#last column before j
-    for(l in 1:nrow(C)){
-      p<-StockPath(276, sigma, S0=value[l], t/steps, np=1, r, delta)
-      Sim_p <- data.frame(p)
-      Use <- data.frame(Sim_p$X2)
-      predictedov1<-predict(regress_model,newdata=Use)
-      predictedov<-predictedov1*exp(-r*dt)
-      holdingvalue[l,j-1]<-mean(predictedov)
+  #Using neural networks to perform our analysis
+  for (j in seq(from=ncol(holding_value)-1, to=2, by=-1)){ #iterate from second to last column all the way to beginning
+    Predictor <- C[,j]
+    Response <- option_value[,j]
+    newC <- data.frame(Predictor,Response)
+    regress_model <- neuralnet(Response~Predictor, data=newC, 
+                               linear.output = FALSE) #neural network model 
+    current_col <- C[,(j-1)] #get every column
+    for(k in 1:nrow(C)){ #iterate each row
+      New_Sim_St <- StockPath(200, sigma, 
+                              current_col[k], dt, np=1, r, delta)
+        #use each current stock price to perform simulations
+      data <- data.frame(New_Sim_St)
+      New_data <- data.frame(data$X2) #simulated stock prices
+      prob <- predict(regress_model, newdata=New_data) 
+        #predicted probability based on neural network method
+      predicted_value <- prob*exp(-r*dt)*New_Sim_St[k]
+        #predicted stock prices
+      holding_value[k,j-1] <- mean(predicted_value) 
+        #assign holding values based on predicted value
     }
-    optionv[,j-1]=pmax(earlyprice[,j-1],holdingvalue[,j-1])
+    option_value[,j-1] <- pmax(early_price[,j-1],holding_value[,j-1]) 
+      #compare payoffs and holding values
   }
-  payoff<-c()
-  for (z in nrow(earlyprice)){
-    wx<-which(earlyprice[z,]>holdingvalue[z,])
-    if(length(wx)==0){
-      payoff[z]=optionv[z,ncol(optionv)]*exp(-r*t)
+  Option_Price <- array(c(rep(0,nrow(early_price)))) 
+    #an empty array for inserting values
+  for (z in 1:nrow(early_price)){
+    exercise_indexes <- which(early_price[z,]>holding_value[z,]) 
+      #compare current payoffs and holding values, and determine exercise time
+    if(length(exercise_indexes)==0){
+      Option_Price[z] <- option_value[z,ncol(option_value)]*exp(-r*t)
+        #if no early exercise, use current option value and discount to beginning
     }
     else{
-      payoff[z]<-optionv[z,wx[1]]*exp(-r*wx[1]*dt)
+      Option_Price[z] <-
+        option_value[z,exercise_indexes[1]]*exp(-r*exercise_indexes[1]*dt)
+        #if early exercise, choose earliest exercise time and discount  
     }
   }
-  finalprice<-mean(payoff)
-  varian<-var(payoff)
-  return(list(finalprice,payoff,varian))
+  Price <- mean(Option_Price)
+  Variance <- var(Option_Price)
+  return(list(Price,Option_Price,Variance))
 }
 ```
 
-UPDATE BELOW!
+For this funtion, the machine learning method we are implementing is the neural network method. This method will create a network, prepare data for it, then train the network and evaluate its performance on the test set. 
 
-For this funtion, the machine learning method we are implementing is the neural network method. This method will create a network, prepare data for it, then train the network and evaluate its performance on the test set.
+We first assign values to last column of option values and holding values with payoffs. After dealing with last column, we move forward to second to last column. We iterate through each row in our dataset and use every value to perform simulations based on StockPath function. After that, we can make comparsion between holding values and payoffs to get option values at second to last column. 
+
+Next, we work backwards from the second to last column to beginning. We build another for-loop to make iteration. In this part, we build a neural network model with changing stock prices as predictor and changing option values as response. We also generate new simulations based on new current stock prices. Then, we make predictions based on neural network model and get probabilites which determine our prediction scores. By multiplying probabilites and current stock prices, we can get estimated prices which can be used to find holding values by taking average. And we can get all values for option values by comparing holding values and payoffs.
+
+The last part of codes is used to determine exercise times. By comparing payoffs and holding values, we can get indexes for exercising times. If there is no exercise time, we simply discount current option value to beginning. If there are exercise times, we choose the smallest index and discount corresponding periods. 
+
+Lastly, we can get price and variance from values of option prices. 
 
 #Problem 5
 
@@ -163,7 +177,7 @@ any vectors and estimations.
 ```{r p5}
 ContVariate <- function(Unknown_Vec, Known_Vec, Known_Value){
   B <- cov(Unknown_Vec, Known_Vec)/var(Known_Vec)
-  Ca <- Unknown_Vec + as.numeric(B)*(Known_Vec - Known_Value)
+  Ca <- as.matrix(Unknown_Vec) + as.numeric(B)*(Known_Vec - Known_Value)
   return(mean(Ca))
 }
 ```
@@ -189,7 +203,7 @@ Below we input MSFT last year stock information and extract the closing prices. 
 
 ```{r}
 #Input Prices, Spreadsheet included in pproject submission
-MSFT <- read.csv(file = 'C:/Users/ron12/OneDrive/Desktop/PSTAT 276/MSFT.csv', 
+MSFT <- read.csv(file = '/Users/lingyuzhou/Desktop/MSFT.csv', 
                    header = T, sep = ",")
 
 MSFT_Price <- MSFT$Close
@@ -210,9 +224,9 @@ Next, we will simulate the next year's MSFT prices by weeks using our StockPath 
 We use weeks because it splits a year into a large number of time periods but its not as computationally heavy as using days. Additionally, it is common to see 1-year stock analysis done in weeks. We will use 100 simulations. This is not a very large amount but should still be sufficient for our analysis while remaining computationally quick. 
 
 ```{r}
-set.seed(34)
+set.seed(50)
 
-n = 20
+n = 100
 T = 1 
 np = 52
 r <- LIBOR
@@ -234,7 +248,6 @@ Simulated_MSFT_Prices <- as.matrix(MSFT_Path)
 
 
 MSFT_put <- AmeOptPrice(Simulated_MSFT_Prices , T, MSFT_Div,r, K, MSFT_Div)
-
 MSFT_put[[1]]
 ```
 
@@ -263,8 +276,8 @@ cat("The Simulated Put price is:", MSFT_Euro_Sim[[1]])
 Using our results above with control variates: 
 
 ```{r}
-Cont_Variate_put <- ContVariate(MSFT_put[[2]], MSFT_Euro_Sim[[2]], MSFT_Euro_True)
 
+Cont_Variate_put <- ContVariate(MSFT_put[[2]], MSFT_Euro_Sim[[2]], MSFT_Euro_True)
 Cont_Variate_put
 ```
 
