@@ -1,6 +1,6 @@
 ---
 title: "PSTAT 276 Final Project"
-author: "Ron Kinel, Rebecca He (176), Lingyu Zhou, Wenjing Li, Samran Khan"
+author: "Rebecca He, Samran Khan, Ron Kinel, Wenjing Li, Lingyu Zhou"
 date: "June 12, 2020"
 output: pdf_document
 ---
