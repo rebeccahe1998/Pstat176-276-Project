@@ -156,15 +156,15 @@ AmeOptPrice <- function(C,t, sigma, r, k ,delta){
 }
 ```
 
-For this funtion, the machine learning method we are implementing is the neural network method. This method will create a network, prepare data for it, then train the network and evaluate its performance on the test set. 
+For this funtion, the machine learning method we are implementing is the neural network method. Because the stock market was very volatile for the past few months, we decided to use a more complex regression model to obtain better prediction power. This method will create a network, prepare data for it, then train the network and evaluate its performance on the test set. 
 
-We first assign values to the last column of option values and holding values with payoffs. After dealing with last column, we move back to second to last column. We iterate through each row in our dataset and use every value to perform simulations based on StockPath function. After that, we can make comparsion between holding values and payoffs to get option values at second to last column. 
+We first find the option value by comparing the exercise price and holding price at T-1 to initialize our regression model.
 
-Next, we work backwards from the second to last column to beginning. We build another for-loop to make iteration. In this part, we build a neural network model with changing stock prices as predictor and changing option values as response. We also generate new simulations based on new current stock prices. Then, we make predictions based on neural network model and get probabilites which determine our prediction scores. By multiplying probabilites and current simulated prices, we can get estimated prices which can be used to find holding values by taking average. And we can get all values for option values by comparing holding values and payoffs.
+Next, we work backwards from the second last column to beginning. We build another for-loop to make iteration. In this part, we build a neural network model with changing stock prices as predictor and changing option values as response. We also generate new simulations based on new current stock prices. Then, we make predictions based on neural network model and get probabilites which determine our prediction scores. By multiplying probabilites and current simulated prices, we can get estimated prices which can be used to find holding values by taking average. And we can get all values for option values by comparing holding values and payoffs.
 
-The last part of codes is used to determine exercise times. By comparing payoffs and holding values, we can get indexes for exercising times. If there is no exercise time, we simply discount current option value to beginning. If there are exercise times, we choose the smallest index and discount corresponding periods. 
+The last part of codes is used to determine the optimal exercise times. By comparing exercise price and holding values at each time node, we can get indexes for optimal exercising times. If there is no such optimal exercise time, the terminal time is optimal exercising time, we simply discount current option value to beginning. If there are optimal exercise times, we choose the smallest index and discount corresponding periods. 
 
-Lastly, we can get price and variance from values of option prices. 
+Lastly, we can get estimated option price and variance from the simulation and predction of option prices. 
 
 # Problem 5
 
@@ -263,8 +263,8 @@ Cont_Variate_put <- ContVariate(MSFT_put[[2]], MSFT_Euro_Sim[[2]], MSFT_Euro_Tru
 Cont_Variate_put
 ```
 
-This result did not effect our option price too significantly. It shifted our result in the opposite direction of the real option price. This fact causes us to think that maybe the current price for this option is too low. Both our machine-learning MC price and the control variate estimation estimated higher prices than the market which leads us to belive the price should certainly be increased to avoid arbitrage opportunities.  
+This result did not effect our option price too significantly. It shifted our result in the opposite direction of the real option price. This proves our American put option price estimation is correct. This fact causes us to think that maybe the current price for this option is too low. Both our machine-learning MC price and the control variate estimation estimated higher prices than the market which leads us to belive the price should certainly be increased to avoid arbitrage opportunities.  
 
 # Conclusion
-Through this project, our group members optimized the financial knowledge we learned throughout this course along with our machine learning skills. In the past few weeks, we explored different machine learning methods and read multiple papers in the field of financial mathematics. We first tried linear regression. However, this method did not allow us to simulate the price for each path. Next, we tried a random forest and multinomial logistic regression. Finally, based on the many prominent papers we read, we decided to use a neural network as our model. Although this project only constructs a simple pricing model, it is the first financial model we created—and the process turned out to be very complex, yet rewarding. Overall, we are proud to have worked on this project; it provided us with an opportunity to be introduced into the real world applications and the field of research related to financial mathematics.
+Through this project, our group members optimized the financial knowledge we learned throughout this course along with our machine learning skills. In the past few weeks, we explored different machine learning methods and read multiple papers in the field of financial mathematics. We first tried linear regression. However, this model is too simple for our volatile stock. Next, we tried a random forest and multinomial logistic regression. Finally, based on the many prominent papers we read, we decided to use a neural network as our model. Although this project only constructs a simple pricing model, it is the first financial model we created—and the process turned out to be very complex, yet rewarding. Overall, we are proud to have worked on this project. It provided us with an opportunity to be introduced into the real world applications and the field of research related to financial mathematics.
 
