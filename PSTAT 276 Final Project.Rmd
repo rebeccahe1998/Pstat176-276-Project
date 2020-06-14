@@ -1,7 +1,7 @@
 ---
-title: "PSTAT 276 Final Project"
-author: "Rebecca He, Samran Khan, Ron Kinel, Wenjing Li, Lingyu Zhou"
-date: "June 12, 2020"
+title: ""
+author: ""
+date: ""
 output: pdf_document
 ---
 
@@ -199,7 +199,7 @@ Below we input MSFT last year stock information and extract the closing prices. 
   
 ```{r}
 #Input Prices, Spreadsheet included in pproject submission
-MSFT <- read.csv(file = 'C:/Users/ron12/OneDrive/Desktop/PSTAT 276/MSFT.csv', 
+MSFT <- read.csv(file = '~/Documents/PSTAT 276/MSFT.csv', 
                    header = T, sep = ",")
 
 MSFT_Price <- MSFT$Close
@@ -265,6 +265,6 @@ Cont_Variate_put
 
 This result did not effect our option price too significantly. It shifted our result in the opposite direction of the real option price. This fact causes us to think that maybe the current price for this option is too low. Both our machine-learning MC price and the control variate estimation estimated higher prices than the market which leads us to belive the price should certainly be increased to avoid arbitrage opportunities.  
 
-
-
+# Conclusion
+Through this project, our group members optimized the financial knowledge we learned throughout this course along with our machine learning skills. In the past few weeks, we explored different machine learning methods and read multiple papers in the field of financial mathematics. We first tried linear regression. However, this method did not allow us to simulate the price for each path. Next, we tried a random forest and multinomial logistic regression. Finally, based on the many prominent papers we read, we decided to use a neural network as our model. Although this project only constructs a simple pricing model, it is the first financial model we created—and the process turned out to be very complex, yet rewarding. Overall, we are proud to have worked on this project; it provided us with an opportunity to be introduced into the real world applications and the field of research related to financial mathematics.
 
